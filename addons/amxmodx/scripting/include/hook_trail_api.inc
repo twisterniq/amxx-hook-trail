@@ -21,3 +21,22 @@ native hook_trail_user_manage(id, bool:enable);
  * @return			true if the player can use hook, false otherwise
  */
 native bool:hook_trail_has_user(id);
+
+/**
+ * Gets the speed of player's hook.
+ *
+ * @param id		Client index
+ *
+ * @return			Speed of player's hook.
+ */
+native Float:hook_trail_get_speed(id);
+
+/**
+ * Sets the speed of player's hook.
+ *
+ * @param id		Client index
+ * @param speed		Speed to set
+ *
+ * @return			Speed of player's hook.
+ */
+native Float:hook_trail_set_speed(id, Float:speed);

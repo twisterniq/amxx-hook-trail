@@ -1,0 +1,14 @@
+[en]
+HOOK_TRAIL_ERROR_ACCESS = ^3* ^1You have no access to that command
+HOOK_TRAIL_CVAR_LIFE_TIME = How many seconds will be seen
+HOOK_TRAIL_CVAR_DEFAULT_SPEED = Default hook speed for the player
+
+[es]
+HOOK_TRAIL_ERROR_ACCESS = ^3* ^1No tienes acceso para usar este comando
+HOOK_TRAIL_CVAR_LIFE_TIME = Durante cuántos segundos se va a ver
+HOOK_TRAIL_CVAR_DEFAULT_SPEED = La velocidad estándar del hook para el jugador
+
+[ru]
+HOOK_TRAIL_ERROR_ACCESS = ^3* ^1У Вас нет доступа для использования этой команды
+HOOK_TRAIL_CVAR_LIFE_TIME = В течении скольки секунд будет отображаться
+HOOK_TRAIL_CVAR_DEFAULT_SPEED = Стандартная скорость хука у игрока

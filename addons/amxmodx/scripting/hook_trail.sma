@@ -1,5 +1,5 @@
 /*
- * Author: https://t.me/twisternick (https://dev-cs.ru/members/444/)
+ * Author: https://t.me/twisterniq (https://dev-cs.ru/members/444/)
  *
  * Official resource topic: https://dev-cs.ru/resources/635/
  */
@@ -11,39 +11,49 @@
 
 #pragma semicolon 1
 
-new const PLUGIN_VERSION[]		= "1.8";
+new const PLUGIN_NAME[] = "Hook Trail";
+new const PLUGIN_VERSION[] = "1.9.0";
+new const PLUGIN_AUTHOR[] = "w0w";
 
 /****************************************************************************************
 ****************************************************************************************/
 
-new const g_szSprite[] = "sprites/hook/neon_electric.spr";
+// Hook sprite that players will see
+new const g_szSprite[] = "sprites/hook/yellow_circle.spr";
 
 /****************************************************************************************
 ****************************************************************************************/
 
-#define IsPlayerValid(%0) (1 <= %0 <= MaxClients)
-
-new bool:g_bAlive[MAX_PLAYERS+1];
-new bool:g_bCanUseHook[MAX_PLAYERS+1];
-new g_iHookOrigin[MAX_PLAYERS+1][3];
-new bool:g_bHookUse[MAX_PLAYERS+1];
-new bool:g_bNeedRefresh[MAX_PLAYERS+1];
+#define is_user_valid(%0) (1 <= %0 <= MaxClients)
 
 enum (+= 100)
 {
-	TASK_ID_HOOK
+	TASK_ID_HOOK = 100
 };
 
-new g_iLifeTime;
+enum _:CVARS
+{
+	CVAR_LIFETIME,
+	Float:CVAR_DEFAULT_SPEED
+};
+
+new g_eCvar[CVARS];
 
 new g_pSpriteTrailHook;
+
+new bool:g_bAlive[MAX_PLAYERS + 1];
+new bool:g_bCanUseHook[MAX_PLAYERS + 1];
+new g_iHookOrigin[MAX_PLAYERS + 1][3];
+new bool:g_bHookUse[MAX_PLAYERS + 1];
+new bool:g_bNeedRefresh[MAX_PLAYERS + 1];
+new Float:g_flHookSpeed[MAX_PLAYERS + 1];
 
 /****************************************************************************************
 ****************************************************************************************/
 
 public plugin_precache()
 {
-	register_plugin("Hook Trail", PLUGIN_VERSION, "w0w");
+	register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
 	if(!file_exists(g_szSprite))
 		set_fail_state("Model ^"%s^" doesn't exist", g_szSprite);
@@ -53,7 +63,7 @@ public plugin_precache()
 
 public plugin_init()
 {
-	register_dictionary("hook_trail.ini");
+	register_dictionary("hook_trail.txt");
 
 	register_clcmd("+hook", "func_HookEnable");
 	register_clcmd("-hook", "func_HookDisable");
@@ -62,23 +72,46 @@ public plugin_init()
 	RegisterHookChain(RG_CBasePlayer_Killed, "refwd_PlayerKilled_Post", true);
 
 	new iEnt = rg_create_entity("info_target", true);
-	SetThink(iEnt, "think_Hook");
-	set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
 
-	new pCvar;
+	if(iEnt)
+	{
+		SetThink(iEnt, "think_Hook");
+		set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
+	}
 
-	pCvar = create_cvar("hook_trail_life_time", "2", FCVAR_NONE, fmt("%l", "HOOK_TRAIL_CVAR_LIFE_TIME"), true, 1.0, true, 25.0);
-	bind_pcvar_num(pCvar, g_iLifeTime);
-
-	AutoExecConfig(true, "hook_trail");
-
-	pCvar = create_cvar("hook_trail_version", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY);
-	set_pcvar_string(pCvar, PLUGIN_VERSION);
+	func_RegisterCvars();
 }
 
-public OnConfigsExecuted()
+func_RegisterCvars()
 {
-	set_cvar_string("hook_trail_version", PLUGIN_VERSION);
+	new pCvar;
+
+	pCvar = create_cvar(
+		.name = "hook_trail_life_time",
+		.string = "2",
+		.flags = FCVAR_NONE,
+		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_LIFE_TIME"),
+		.has_min = true,
+		.min_val = 1.0,
+		.has_max = true,
+		.max_val = 25.0);
+	bind_pcvar_num(pCvar, g_eCvar[CVAR_LIFETIME]);
+
+	pCvar = create_cvar(
+		.name = "hook_trail_default_speed",
+		.string = "350",
+		.flags = FCVAR_NONE,
+		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_DEFAULT_SPEED"),
+		.has_min = true,
+		.min_val = 1.0);
+	bind_pcvar_float(pCvar, g_eCvar[CVAR_DEFAULT_SPEED]);
+
+	AutoExecConfig(true, "hook_trail");
+}
+
+public client_putinserver(id)
+{
+	g_flHookSpeed[id] = !g_eCvar[CVAR_DEFAULT_SPEED] ? 350.0 : g_eCvar[CVAR_DEFAULT_SPEED];
 }
 
 public refwd_PlayerSpawn_Post(id)
@@ -135,15 +168,17 @@ public func_HookDisable(id)
 func_SetTrail(id)
 {
 	message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
-	write_byte(TE_BEAMFOLLOW);
-	write_short(id);					// entity
-	write_short(g_pSpriteTrailHook);	// sprite index
-	write_byte(g_iLifeTime * 10);		// life
-	write_byte(15);						// width
-	write_byte(255);					// red
-	write_byte(255);					// green
-	write_byte(255);					// blue
-	write_byte(255);					// brightness
+	{
+		write_byte(TE_BEAMFOLLOW);
+		write_short(id);							// entity
+		write_short(g_pSpriteTrailHook);			// sprite index
+		write_byte(g_eCvar[CVAR_LIFETIME] * 10);	// life
+		write_byte(15);								// width
+		write_byte(255);							// red
+		write_byte(255);							// green
+		write_byte(255);							// blue
+		write_byte(255);							// brightness
+	}
 	message_end();
 }
 
@@ -195,11 +230,12 @@ public think_Hook(iEnt)
 
 		get_user_origin(iPlayer, iOrigin);
 		iDistance = get_distance(g_iHookOrigin[iPlayer], iOrigin);
+
 		if(iDistance > 25)
 		{
-			flVelocity[0] = (g_iHookOrigin[iPlayer][0] - iOrigin[0]) * (2.0 * 350.0 / iDistance);
-			flVelocity[1] = (g_iHookOrigin[iPlayer][1] - iOrigin[1]) * (2.0 * 350.0 / iDistance);
-			flVelocity[2] = (g_iHookOrigin[iPlayer][2] - iOrigin[2]) * (2.0 * 350.0 / iDistance);
+			flVelocity[0] = (g_iHookOrigin[iPlayer][0] - iOrigin[0]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
+			flVelocity[1] = (g_iHookOrigin[iPlayer][1] - iOrigin[1]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
+			flVelocity[2] = (g_iHookOrigin[iPlayer][2] - iOrigin[2]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
 			set_entvar(iPlayer, var_velocity, flVelocity);
 		}
 	}
@@ -212,20 +248,24 @@ public think_Hook(iEnt)
 
 public plugin_natives()
 {
-	register_native("hook_trail_user_manage", "__hook_trail_user_manage");
-	register_native("hook_trail_has_user", "__hook_trail_has_user");
+	register_library("hook_trail");
+
+	register_native("hook_trail_user_manage", "Native_UserManage");
+	register_native("hook_trail_has_user", "Native_HasUser");
+	register_native("hook_trail_get_speed", "Native_GetSpeed");
+	register_native("hook_trail_set_speed", "Native_SetSpeed");
 }
 
-public __hook_trail_user_manage(iPlugin, iParams)
+public Native_UserManage(iPlugin, iParams)
 {
-	enum { player = 1, enable };
+	enum { arg_player = 1, arg_enable };
 
-	new iPlayer = get_param(player);
+	new iPlayer = get_param(arg_player);
 
-	if(!IsPlayerValid(iPlayer))
+	if(!is_user_valid(iPlayer))
 		abort(AMX_ERR_NATIVE, "Player out of range (%d)", iPlayer);
 
-	g_bCanUseHook[iPlayer] = bool:get_param(enable);
+	g_bCanUseHook[iPlayer] = bool:get_param(arg_enable);
 
 	if(!g_bCanUseHook[iPlayer])
 	{
@@ -234,14 +274,43 @@ public __hook_trail_user_manage(iPlugin, iParams)
 	}
 }
 
-public __hook_trail_has_user(iPlugin, iParams)
+public bool:Native_HasUser(iPlugin, iParams)
 {
-	enum { player = 1 };
+	enum { arg_player = 1 };
 
-	new iPlayer = get_param(player);
+	new iPlayer = get_param(arg_player);
 
-	if(!IsPlayerValid(iPlayer))
+	if(!is_user_valid(iPlayer))
 		abort(AMX_ERR_NATIVE, "Player out of range (%d)", iPlayer);
 
 	return g_bCanUseHook[iPlayer];
+}
+
+public Float:Native_GetSpeed(iPlugin, iParams)
+{
+	enum { arg_player = 1 };
+
+	new iPlayer = get_param(arg_player);
+
+	if(!is_user_valid(iPlayer))
+		abort(AMX_ERR_NATIVE, "Player out of range (%d)", iPlayer);
+
+	return g_flHookSpeed[iPlayer];
+}
+
+public Float:Native_SetSpeed(iPlugin, iParams)
+{
+	enum { arg_player = 1, arg_speed };
+
+	new iPlayer = get_param(arg_player);
+
+	if(!is_user_valid(iPlayer))
+		abort(AMX_ERR_NATIVE, "Player out of range (%d)", iPlayer);
+
+	new Float:flSpeed = get_param_f(arg_speed);
+
+	if(flSpeed < 1.0)
+		abort(AMX_ERR_NATIVE, "Speed must be greater or equal to 1.0");
+
+	g_flHookSpeed[iPlayer] = flSpeed;
 }
