@@ -9,11 +9,11 @@
 #include <reapi>
 #include <hook_trail_api>
 
-new const PLUGIN_VERSION[] = "1.0.2";
+#pragma semicolon 1
 
-#if !defined MAX_MENU_LENGTH
-	#define MAX_MENU_LENGTH 512
-#endif
+new const PLUGIN_NAME[] = "Hook Trail Addon";
+new const PLUGIN_VERSION[] = "1.0.3";
+new const PLUGIN_AUTHOR[] = "w0w";
 
 /****************************************************************************************
 ****************************************************************************************/
@@ -27,6 +27,10 @@ const PLAYERS_PER_PAGE = 8;
 /****************************************************************************************
 ****************************************************************************************/
 
+#if !defined MAX_MENU_LENGTH
+	#define MAX_MENU_LENGTH 512
+#endif
+
 #if defined ADMIN_LOADER_NEUGOMON
 	#define client_putinserver client_admin
 #endif
@@ -37,7 +41,7 @@ new g_iAccessMenu = ADMIN_IMMUNITY;
 
 public plugin_init()
 {
-	register_plugin("Hook Trail Addon", PLUGIN_VERSION, "w0w");
+	register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 	register_dictionary("hook_trail_addon.txt");
 
 	new szCmd[][] = { "hookmenu", "/hookmenu", "!hookmenu", ".hookmenu" };
@@ -61,6 +65,12 @@ func_RegisterCvars()
 	hook_cvar_change(pCvar, "hook_CvarChange_Access_Menu");
 
 	AutoExecConfig(true, "hook_trail_addon");
+
+	new szPath[PLATFORM_MAX_PATH];
+	get_configsdir(szPath, charsmax(szPath));
+
+	server_cmd("exec %s/plugins/hook_trail_addon.cfg", szPath);
+	server_exec();
 }
 
 public client_putinserver(id)

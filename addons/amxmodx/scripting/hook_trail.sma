@@ -12,7 +12,7 @@
 #pragma semicolon 1
 
 new const PLUGIN_NAME[] = "Hook Trail";
-new const PLUGIN_VERSION[] = "1.9.0";
+new const PLUGIN_VERSION[] = "2.0.0";
 new const PLUGIN_AUTHOR[] = "w0w";
 
 /****************************************************************************************
@@ -38,6 +38,15 @@ enum _:CVARS
 };
 
 new g_eCvar[CVARS];
+
+enum _:FORWARDS
+{
+	FORWARD_ON_START,
+	FORWARD_ON_FINISH,
+	FORWARD_ON_USE
+};
+
+new g_iForward[FORWARDS];
 
 new g_pSpriteTrailHook;
 
@@ -71,6 +80,10 @@ public plugin_init()
 	RegisterHookChain(RG_CSGameRules_PlayerSpawn, "refwd_PlayerSpawn_Post", true);
 	RegisterHookChain(RG_CBasePlayer_Killed, "refwd_PlayerKilled_Post", true);
 
+	g_iForward[FORWARD_ON_START] = CreateMultiForward("hook_trail_on_start", ET_STOP, FP_CELL);
+	g_iForward[FORWARD_ON_FINISH] = CreateMultiForward("hook_trail_on_finish", ET_IGNORE, FP_CELL);
+	g_iForward[FORWARD_ON_USE] = CreateMultiForward("hook_trail_on_use", ET_STOP, FP_CELL);
+
 	new iEnt = rg_create_entity("info_target", true);
 
 	if(iEnt)
@@ -99,7 +112,7 @@ func_RegisterCvars()
 
 	pCvar = create_cvar(
 		.name = "hook_trail_default_speed",
-		.string = "350",
+		.string = "700",
 		.flags = FCVAR_NONE,
 		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_DEFAULT_SPEED"),
 		.has_min = true,
@@ -107,11 +120,17 @@ func_RegisterCvars()
 	bind_pcvar_float(pCvar, g_eCvar[CVAR_DEFAULT_SPEED]);
 
 	AutoExecConfig(true, "hook_trail");
+
+	new szPath[PLATFORM_MAX_PATH];
+	get_configsdir(szPath, charsmax(szPath));
+
+	server_cmd("exec %s/plugins/hook_trail.cfg", szPath);
+	server_exec();
 }
 
 public client_putinserver(id)
 {
-	g_flHookSpeed[id] = !g_eCvar[CVAR_DEFAULT_SPEED] ? 350.0 : g_eCvar[CVAR_DEFAULT_SPEED];
+	g_flHookSpeed[id] = g_eCvar[CVAR_DEFAULT_SPEED];
 }
 
 public refwd_PlayerSpawn_Post(id)
@@ -146,6 +165,12 @@ public func_HookEnable(id)
 		return PLUGIN_HANDLED;
 	}
 
+	new iResult;
+	ExecuteForward(g_iForward[FORWARD_ON_START], iResult, id);
+
+	if(iResult >= PLUGIN_HANDLED)
+		return PLUGIN_HANDLED;
+
 	g_bHookUse[id] = true;
 	get_user_origin(id, g_iHookOrigin[id], Origin_AimEndEyes);
 
@@ -161,7 +186,13 @@ public func_HookEnable(id)
 
 public func_HookDisable(id)
 {
-	g_bHookUse[id] = false;
+	if(g_bHookUse[id])
+	{
+		ExecuteForward(g_iForward[FORWARD_ON_FINISH], _, id);
+
+		g_bHookUse[id] = false;
+	}
+
 	return PLUGIN_HANDLED;
 }
 
@@ -219,7 +250,7 @@ public think_Hook(iEnt)
 	static iPlayers[MAX_PLAYERS], iPlayerCount;
 	get_players_ex(iPlayers, iPlayerCount, GetPlayers_ExcludeDead);
 
-	static iOrigin[3], Float:flVelocity[3], iDistance;
+	static iOrigin[3], Float:flVelocity[3], iDistance, iResult;
 
 	for(new i, iPlayer; i < iPlayerCount; i++)
 	{
@@ -228,14 +259,24 @@ public think_Hook(iEnt)
 		if(!g_bHookUse[iPlayer])
 			continue;
 
+		ExecuteForward(g_iForward[FORWARD_ON_USE], iResult, iPlayer);
+
+		if(iResult >= PLUGIN_HANDLED)
+		{
+			remove_task(iPlayer+TASK_ID_HOOK);
+			func_RemoveTrail(iPlayer);
+			func_HookDisable(iPlayer);
+			continue;
+		}
+
 		get_user_origin(iPlayer, iOrigin);
 		iDistance = get_distance(g_iHookOrigin[iPlayer], iOrigin);
 
 		if(iDistance > 25)
 		{
-			flVelocity[0] = (g_iHookOrigin[iPlayer][0] - iOrigin[0]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
-			flVelocity[1] = (g_iHookOrigin[iPlayer][1] - iOrigin[1]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
-			flVelocity[2] = (g_iHookOrigin[iPlayer][2] - iOrigin[2]) * (2.0 * g_flHookSpeed[iPlayer] / iDistance);
+			flVelocity[0] = (g_iHookOrigin[iPlayer][0] - iOrigin[0]) * (g_flHookSpeed[iPlayer] / iDistance);
+			flVelocity[1] = (g_iHookOrigin[iPlayer][1] - iOrigin[1]) * (g_flHookSpeed[iPlayer] / iDistance);
+			flVelocity[2] = (g_iHookOrigin[iPlayer][2] - iOrigin[2]) * (g_flHookSpeed[iPlayer] / iDistance);
 			set_entvar(iPlayer, var_velocity, flVelocity);
 		}
 	}
@@ -250,10 +291,10 @@ public plugin_natives()
 {
 	register_library("hook_trail");
 
-	register_native("hook_trail_user_manage", "Native_UserManage");
-	register_native("hook_trail_has_user", "Native_HasUser");
-	register_native("hook_trail_get_speed", "Native_GetSpeed");
-	register_native("hook_trail_set_speed", "Native_SetSpeed");
+	register_native("hook_trail_user_manage",		"Native_UserManage");
+	register_native("hook_trail_has_user",			"Native_HasUser");
+	register_native("hook_trail_get_user_speed",	"Native_GetUserSpeed");
+	register_native("hook_trail_set_user_speed",	"Native_SetUserSpeed");
 }
 
 public Native_UserManage(iPlugin, iParams)
@@ -286,7 +327,7 @@ public bool:Native_HasUser(iPlugin, iParams)
 	return g_bCanUseHook[iPlayer];
 }
 
-public Float:Native_GetSpeed(iPlugin, iParams)
+public Float:Native_GetUserSpeed(iPlugin, iParams)
 {
 	enum { arg_player = 1 };
 
@@ -298,7 +339,7 @@ public Float:Native_GetSpeed(iPlugin, iParams)
 	return g_flHookSpeed[iPlayer];
 }
 
-public Float:Native_SetSpeed(iPlugin, iParams)
+public Float:Native_SetUserSpeed(iPlugin, iParams)
 {
 	enum { arg_player = 1, arg_speed };
 
