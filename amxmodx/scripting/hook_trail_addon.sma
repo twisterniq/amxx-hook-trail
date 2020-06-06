@@ -11,21 +11,22 @@
 
 #pragma semicolon 1
 
-new const PLUGIN_NAME[] = "Hook Trail Addon";
-new const PLUGIN_VERSION[] = "1.0.3";
-new const PLUGIN_AUTHOR[] = "w0w";
+public stock const PluginName[] = "Hook Trail Addon";
+public stock const PluginVersion[] = "1.1.7";
+public stock const PluginAuthor[] = "twisterniq";
+public stock const PluginURL[] = "https://github.com/twisterniq/Hook-Trail";
+public stock const PluginDescription[] = "Hook Trail add-on. It allows to use hook to players with access and to give access via menu.";
 
 /****************************************************************************************
 ****************************************************************************************/
+
+new const CONFIG_NAME[] = "hook_trail_addon";
 
 // Don't comment if you're using Admin Loader by neugomon
 //#define ADMIN_LOADER_NEUGOMON
 
-// Number of players that will be shown in menu per page
+// Number of players that will be shown in menu per page. Can't be more than 8
 const PLAYERS_PER_PAGE = 8;
-
-/****************************************************************************************
-****************************************************************************************/
 
 #if !defined MAX_MENU_LENGTH
 	#define MAX_MENU_LENGTH 512
@@ -41,68 +42,87 @@ new g_iAccessMenu = ADMIN_IMMUNITY;
 
 public plugin_init()
 {
-	register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
+#if AMXX_VERSION_NUM == 190
+	register_plugin(
+		.plugin_name = PluginName,
+		.version = PluginVersion,
+		.author = PluginAuthor);
+#endif
+
 	register_dictionary("hook_trail_addon.txt");
 
 	new szCmd[][] = { "hookmenu", "/hookmenu", "!hookmenu", ".hookmenu" };
-	register_clcmd_list(szCmd, "func_HookTrailCmd");
+	register_clcmd_list(szCmd, "@func_HookTrailCmd");
 
-	register_menu("func_HookTrailMenu", 1023, "func_HookTrailMenu_Handler");
+	register_menu("@func_HookTrailMenu", 1023, "@func_HookTrailMenu_Handler");
 
-	func_RegisterCvars();
-}
-
-func_RegisterCvars()
-{
 	new pCvar;
 
-	pCvar = create_cvar("hook_trail_access", "p", FCVAR_NONE, fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_ACCESS"));
+	pCvar = create_cvar(
+		.name = "hook_trail_access",
+		.string = "p",
+		.flags = FCVAR_NONE,
+		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_ACCESS"));
 	set_pcvar_string(pCvar, "");
-	hook_cvar_change(pCvar, "hook_CvarChange_Access");
+	hook_cvar_change(pCvar, "@OnAccessHookChange");
 
-	pCvar = create_cvar("hook_trail_access_menu", "a", FCVAR_NONE, fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_ACCESS_MENU"));
+	pCvar = create_cvar(
+		.name = "hook_trail_access_menu",
+		.string = "a",
+		.flags = FCVAR_NONE,
+		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_ACCESS_MENU"));
 	set_pcvar_string(pCvar, "");
-	hook_cvar_change(pCvar, "hook_CvarChange_Access_Menu");
+	hook_cvar_change(pCvar, "@OnAccessMenuChange");
 
-	AutoExecConfig(true, "hook_trail_addon");
+	AutoExecConfig(true, CONFIG_NAME);
 
 	new szPath[PLATFORM_MAX_PATH];
-	get_configsdir(szPath, charsmax(szPath));
-
-	server_cmd("exec %s/plugins/hook_trail_addon.cfg", szPath);
+	get_localinfo("amxx_configsdir", szPath, charsmax(szPath));
+	server_cmd("exec %s/plugins/%s.cfg", szPath, CONFIG_NAME);
 	server_exec();
 }
 
 public client_putinserver(id)
 {
 	if(g_iAccessHook > 0 && get_user_flags(id) & g_iAccessHook)
+	{
 		hook_trail_user_manage(id, true);
+	}
 #if defined ADMIN_LOADER_NEUGOMON
 	else
+	{
 		hook_trail_user_manage(id, false);
+	}
 #endif
 }
 
-public func_HookTrailCmd(id)
+@func_HookTrailCmd(const id)
 {
 	if(g_iAccessMenu > 0 && !(get_user_flags(id) & g_iAccessMenu))
+	{
 		return PLUGIN_HANDLED;
+	}
 
-	func_HookTrailMenu(id, 0);
+	@func_HookTrailMenu(id, 0);
 
 	return PLUGIN_HANDLED;
 }
 
-public func_HookTrailMenu(id, iPage)
+@func_HookTrailMenu(const id, iPage)
 {
 	if(iPage < 0)
+	{
 		return;
+	}
 
 	new iPlayerCount;
+
 	for(new i = 1; i <= MaxClients; i++)
 	{
 		if(!is_user_alive(i))
+		{
 			continue;
+		}
 
 		g_iMenuPlayers[id][iPlayerCount++] = i;
 	}
@@ -133,22 +153,24 @@ public func_HookTrailMenu(id, iPage)
 		iKeys |= (MENU_KEY_9);
 	}
 	else
+	{
 		formatex(szMenu[iLen], charsmax(szMenu) - iLen, "^n\y0. \w%l", iPage ? "HOOK_TRAIL_MENU_BACK" : "HOOK_TRAIL_MENU_EXIT");
+	}
 
-	show_menu(id, iKeys, szMenu, -1, "func_HookTrailMenu");
+	show_menu(id, iKeys, szMenu, -1, "@func_HookTrailMenu");
 }
 
-public func_HookTrailMenu_Handler(id, iKey)
+@func_HookTrailMenu_Handler(const id, iKey)
 {
 	switch(iKey)
 	{
 		case 8:
 		{
-			func_HookTrailMenu(id, ++g_iMenuPosition[id]);
+			@func_HookTrailMenu(id, ++g_iMenuPosition[id]);
 		}
 		case 9:
 		{
-			func_HookTrailMenu(id, --g_iMenuPosition[id]);
+			@func_HookTrailMenu(id, --g_iMenuPosition[id]);
 		}
 		default:
 		{
@@ -157,7 +179,7 @@ public func_HookTrailMenu_Handler(id, iKey)
 			if(!is_user_connected(iTarget))
 			{
 				client_print_color(id, print_team_red, "%l", "HOOK_TRAIL_MENU_ERROR");
-				func_HookTrailMenu(id, g_iMenuPosition[id]);
+				@func_HookTrailMenu(id, g_iMenuPosition[id]);
 
 				return PLUGIN_HANDLED;
 			}
@@ -165,25 +187,22 @@ public func_HookTrailMenu_Handler(id, iKey)
 			new bool:bHasHook = hook_trail_has_user(iTarget);
 			hook_trail_user_manage(iTarget, !bHasHook);
 			client_print_color(id, iTarget, "%l", bHasHook ? "HOOK_TRAIL_MENU_TAKEN" : "HOOK_TRAIL_MENU_GIVEN", iTarget);
-			func_HookTrailMenu(id, g_iMenuPosition[id]);
+			@func_HookTrailMenu(id, g_iMenuPosition[id]);
 		}
 	}
 
 	return PLUGIN_HANDLED;
 }
 
-public hook_CvarChange_Access(pCvar, const szOldValue[], const szNewValue[])
+@OnAccessHookChange(const iHandle, const szOldValue[], const szNewValue[])
 {
 	g_iAccessHook = read_flags(szNewValue);
 }
 
-public hook_CvarChange_Access_Menu(pCvar, const szOldValue[], const szNewValue[])
+@OnAccessMenuChange(const iHandle, const szOldValue[], const szNewValue[])
 {
 	g_iAccessMenu = read_flags(szNewValue);
 }
-
-/****************************************************************************************
-****************************************************************************************/
 
 // thx wopox1337 (https://dev-cs.ru/threads/222/page-7#post-76442)
 stock register_clcmd_list(const cmd_list[][], const function[], flags = -1, const info[] = "", FlagManager = -1, bool:info_ml = false, const size = sizeof(cmd_list))
