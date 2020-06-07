@@ -1,6 +1,4 @@
 /*
- * Author: https://t.me/twisterniq (https://dev-cs.ru/members/444/)
- *
  * Official resource topic: https://dev-cs.ru/resources/635/
  */
 
@@ -84,7 +82,7 @@ public plugin_init()
 
 public client_putinserver(id)
 {
-	if(g_iAccessHook > 0 && get_user_flags(id) & g_iAccessHook)
+	if (g_iAccessHook > 0 && get_user_flags(id) & g_iAccessHook)
 	{
 		hook_trail_user_manage(id, true);
 	}
@@ -98,7 +96,7 @@ public client_putinserver(id)
 
 @func_HookTrailCmd(const id)
 {
-	if(g_iAccessMenu > 0 && !(get_user_flags(id) & g_iAccessMenu))
+	if (g_iAccessMenu > 0 && !(get_user_flags(id) & g_iAccessMenu))
 	{
 		return PLUGIN_HANDLED;
 	}
@@ -110,16 +108,16 @@ public client_putinserver(id)
 
 @func_HookTrailMenu(const id, iPage)
 {
-	if(iPage < 0)
+	if (iPage < 0)
 	{
 		return;
 	}
 
 	new iPlayerCount;
 
-	for(new i = 1; i <= MaxClients; i++)
+	for (new i = 1; i <= MaxClients; i++)
 	{
-		if(!is_user_alive(i))
+		if (!is_user_alive(i))
 		{
 			continue;
 		}
@@ -134,12 +132,11 @@ public client_putinserver(id)
 	new iEnd = min(iStart + PLAYERS_PER_PAGE, iPlayerCount);
 	g_iMenuPosition[id] = iPage = iStart / PLAYERS_PER_PAGE;
 
-	new szMenu[MAX_MENU_LENGTH], iMenuItem, iKeys = (MENU_KEY_0), iPagesNum;
-	iPagesNum = (iPlayerCount / PLAYERS_PER_PAGE + ((iPlayerCount % PLAYERS_PER_PAGE) ? 1 : 0));
-
+	new szMenu[MAX_MENU_LENGTH], iMenuItem, iKeys = (MENU_KEY_0);
+	new iPagesNum = (iPlayerCount / PLAYERS_PER_PAGE + ((iPlayerCount % PLAYERS_PER_PAGE) ? 1 : 0));
 	new iLen = formatex(szMenu, charsmax(szMenu), "\y%l \d\R%d/%d^n^n", "HOOK_TRAIL_MENU_TITLE", iPage + 1, iPagesNum);
 
-	for(new a = iStart, iPlayer; a < iEnd; ++a)
+	for (new a = iStart, iPlayer; a < iEnd; ++a)
 	{
 		iPlayer = g_iMenuPlayers[id][a];
 
@@ -147,7 +144,7 @@ public client_putinserver(id)
 		iLen += formatex(szMenu[iLen], charsmax(szMenu) - iLen, "\y%d. \w%n %l^n", ++iMenuItem, iPlayer, hook_trail_has_user(iPlayer) ? "HOOK_TRAIL_MENU_HAS" : "HOOK_TRAIL_MENU_EMPTY");
 	}
 
-	if(iEnd != iPlayerCount)
+	if (iEnd != iPlayerCount)
 	{
 		formatex(szMenu[iLen], charsmax(szMenu) - iLen, "^n\y9. \w%l^n\y0. \w%l", "HOOK_TRAIL_MENU_NEXT", iPage ? "HOOK_TRAIL_MENU_BACK" : "HOOK_TRAIL_MENU_EXIT");
 		iKeys |= (MENU_KEY_9);
@@ -176,7 +173,7 @@ public client_putinserver(id)
 		{
 			new iTarget = g_iMenuPlayers[id][(g_iMenuPosition[id] * PLAYERS_PER_PAGE) + iKey];
 
-			if(!is_user_connected(iTarget))
+			if (!is_user_connected(iTarget))
 			{
 				client_print_color(id, print_team_red, "%l", "HOOK_TRAIL_MENU_ERROR");
 				@func_HookTrailMenu(id, g_iMenuPosition[id]);
@@ -211,7 +208,7 @@ stock register_clcmd_list(const cmd_list[][], const function[], flags = -1, cons
 #pragma unused FlagManager
 #pragma unused info_ml
 
-    for(new i; i < size; i++)
+    for (new i; i < size; i++)
 	{
         register_clcmd(cmd_list[i], function, flags, info, FlagManager, info_ml);
     }

@@ -1,6 +1,4 @@
 /*
- * Author: https://t.me/twisterniq (https://dev-cs.ru/members/444/)
- *
  * Official resource topic: https://dev-cs.ru/resources/635/
  */
 
@@ -11,7 +9,7 @@
 #pragma semicolon 1
 
 public stock const PluginName[] = "Hook Trail";
-public stock const PluginVersion[] = "2.1.7";
+public stock const PluginVersion[] = "2.1.8";
 public stock const PluginAuthor[] = "twisterniq";
 public stock const PluginURL[] = "https://github.com/twisterniq/Hook-Trail";
 public stock const PluginDescription[] = "Ability to use hook with API";
@@ -63,7 +61,7 @@ public plugin_precache()
 		.author = PluginAuthor);
 #endif
 
-	if(!file_exists(g_szSprite))
+	if (!file_exists(g_szSprite))
 	{
 		set_fail_state("Model ^"%s^" does not exist", g_szSprite);
 	}
@@ -114,7 +112,7 @@ public plugin_init()
 
 	new iEnt = rg_create_entity("info_target", true);
 
-	if(iEnt)
+	if (iEnt)
 	{
 		SetThink(iEnt, "@think_Hook");
 		set_entvar(iEnt, var_nextthink, get_gametime() + 0.1);
@@ -134,7 +132,7 @@ public client_disconnected(id)
 
 @OnPlayerSpawn_Post(const id)
 {
-	if(is_user_alive(id))
+	if (is_user_alive(id))
 	{
 		g_bAlive[id] = true;
 		g_bHookUse[id] = false;
@@ -149,12 +147,12 @@ public client_disconnected(id)
 
 @func_HookEnable(const id)
 {
-	if(!g_bAlive[id])
+	if (!g_bAlive[id])
 	{
 		return PLUGIN_HANDLED;
 	}
 
-	if(!g_bCanUseHook[id])
+	if (!g_bCanUseHook[id])
 	{
 		client_print_color(id, print_team_red, "%l", "HOOK_TRAIL_ERROR_ACCESS");
 		return PLUGIN_HANDLED;
@@ -163,7 +161,7 @@ public client_disconnected(id)
 	new iResult;
 	ExecuteForward(g_iForward[FORWARD_ON_START], iResult, id);
 
-	if(iResult >= PLUGIN_HANDLED)
+	if (iResult >= PLUGIN_HANDLED)
 	{
 		return PLUGIN_HANDLED;
 	}
@@ -171,7 +169,7 @@ public client_disconnected(id)
 	g_bHookUse[id] = true;
 	get_user_origin(id, g_iHookOrigin[id], Origin_AimEndEyes);
 
-	if(!task_exists(id+TASK_ID_HOOK))
+	if (!task_exists(id+TASK_ID_HOOK))
 	{
 		func_RemoveTrail(id);
 		func_SetTrail(id);
@@ -183,7 +181,7 @@ public client_disconnected(id)
 
 @func_HookDisable(const id)
 {
-	if(g_bHookUse[id])
+	if (g_bHookUse[id])
 	{
 		ExecuteForward(g_iForward[FORWARD_ON_FINISH], _, id);
 		g_bHookUse[id] = false;
@@ -223,7 +221,7 @@ func_RemoveTrail(const id)
 {
 	id -= TASK_ID_HOOK;
 
-	if(get_entvar(id, var_flags) & FL_ONGROUND && !g_bHookUse[id])
+	if (get_entvar(id, var_flags) & FL_ONGROUND && !g_bHookUse[id])
 	{
 		remove_task(id+TASK_ID_HOOK);
 		func_RemoveTrail(id);
@@ -233,11 +231,11 @@ func_RemoveTrail(const id)
 	static Float:flVelocity[3];
 	get_entvar(id, var_velocity, flVelocity);
 
-	if(vector_length(flVelocity) < 10.0)
+	if (vector_length(flVelocity) < 10.0)
 	{
 		g_bNeedRefresh[id] = true;
 	}
-	else if(g_bNeedRefresh[id])
+	else if (g_bNeedRefresh[id])
 	{
 		g_bNeedRefresh[id] = false;
 		func_RemoveTrail(id);
@@ -252,18 +250,18 @@ func_RemoveTrail(const id)
 
 	static iOrigin[3], Float:flVelocity[3], iDistance, iResult;
 
-	for(new i, iPlayer; i < iPlayerCount; i++)
+	for (new i, iPlayer; i < iPlayerCount; i++)
 	{
 		iPlayer = iPlayers[i];
 
-		if(!g_bHookUse[iPlayer])
+		if (!g_bHookUse[iPlayer])
 		{
 			continue;
 		}
 
 		ExecuteForward(g_iForward[FORWARD_ON_USE], iResult, iPlayer);
 
-		if(iResult >= PLUGIN_HANDLED)
+		if (iResult >= PLUGIN_HANDLED)
 		{
 			remove_task(iPlayer+TASK_ID_HOOK);
 			func_RemoveTrail(iPlayer);
@@ -274,7 +272,7 @@ func_RemoveTrail(const id)
 		get_user_origin(iPlayer, iOrigin);
 		iDistance = get_distance(g_iHookOrigin[iPlayer], iOrigin);
 
-		if(iDistance > 25)
+		if (iDistance > 25)
 		{
 			flVelocity[0] = (g_iHookOrigin[iPlayer][0] - iOrigin[0]) * (g_flHookSpeed[iPlayer] / iDistance);
 			flVelocity[1] = (g_iHookOrigin[iPlayer][1] - iOrigin[1]) * (g_flHookSpeed[iPlayer] / iDistance);
@@ -309,7 +307,7 @@ public plugin_natives()
 
 	g_bCanUseHook[iPlayer] = bool:get_param(arg_enable);
 
-	if(!g_bCanUseHook[iPlayer])
+	if (!g_bCanUseHook[iPlayer])
 	{
 		g_bHookUse[iPlayer] = false;
 		remove_task(iPlayer);
@@ -348,7 +346,7 @@ Float:@Native_SetUserSpeed(const iPlugin, const iParams)
 
 	new Float:flSpeed = get_param_f(arg_speed);
 
-	if(flSpeed < 1.0)
+	if (flSpeed < 1.0)
 	{
 		abort(AMX_ERR_NATIVE, "Speed must be greater or equal to 1.0");
 	}
