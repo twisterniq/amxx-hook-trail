@@ -11,7 +11,7 @@
 public stock const PluginName[] = "Hook Trail";
 public stock const PluginVersion[] = "2.1.8";
 public stock const PluginAuthor[] = "twisterniq";
-public stock const PluginURL[] = "https://github.com/twisterniq/Hook-Trail";
+public stock const PluginURL[] = "https://github.com/twisterniq/amxx-hook-trail";
 public stock const PluginDescription[] = "Ability to use hook with API";
 
 new const CONFIG_NAME[] = "hook_trail";

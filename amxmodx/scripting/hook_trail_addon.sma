@@ -12,7 +12,7 @@
 public stock const PluginName[] = "Hook Trail Addon";
 public stock const PluginVersion[] = "1.1.7";
 public stock const PluginAuthor[] = "twisterniq";
-public stock const PluginURL[] = "https://github.com/twisterniq/Hook-Trail";
+public stock const PluginURL[] = "https://github.com/twisterniq/amxx-hook-trail";
 public stock const PluginDescription[] = "Hook Trail add-on. It allows to use hook to players with access and to give access via menu.";
 
 /****************************************************************************************
