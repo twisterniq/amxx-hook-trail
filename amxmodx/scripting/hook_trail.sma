@@ -9,10 +9,10 @@
 #pragma semicolon 1
 
 public stock const PluginName[] = "Hook Trail";
-public stock const PluginVersion[] = "2.1.8";
+public stock const PluginVersion[] = "3.0.0";
 public stock const PluginAuthor[] = "twisterniq";
 public stock const PluginURL[] = "https://github.com/twisterniq/amxx-hook-trail";
-public stock const PluginDescription[] = "Ability to use hook with API";
+public stock const PluginDescription[] = "Adds the ability to use a hook. It provides an API.";
 
 new const CONFIG_NAME[] = "hook_trail";
 
@@ -20,7 +20,8 @@ new const CONFIG_NAME[] = "hook_trail";
 new const g_szSprite[] = "sprites/hook/yellow_circle.spr";
 
 #define CHECK_NATIVE_PLAYER(%0) \
-    if (!(1 <= %0 <= MaxClients)) { \
+    if (!(1 <= %0 <= MaxClients)) \
+	{ \
         abort(AMX_ERR_NATIVE, "Player out of range (%d)", %0); \
     }
 
@@ -45,7 +46,6 @@ new g_iForward[FORWARDS];
 
 new g_pSpriteTrailHook;
 
-new bool:g_bAlive[MAX_PLAYERS + 1];
 new bool:g_bCanUseHook[MAX_PLAYERS + 1];
 new g_iHookOrigin[MAX_PLAYERS + 1][3];
 new bool:g_bHookUse[MAX_PLAYERS + 1];
@@ -91,17 +91,15 @@ public plugin_init()
 		.has_min = true,
 		.min_val = 1.0,
 		.has_max = true,
-		.max_val = 25.0),
-		g_eCvar[CVAR_LIFETIME]);
+		.max_val = 25.0), g_eCvar[CVAR_LIFETIME]);
 
 	bind_pcvar_float(create_cvar(
 		.name = "hook_trail_default_speed",
-		.string = "700",
+		.string = "700.0",
 		.flags = FCVAR_NONE,
 		.description = fmt("%L", LANG_SERVER, "HOOK_TRAIL_CVAR_DEFAULT_SPEED"),
 		.has_min = true,
-		.min_val = 1.0),
-		g_eCvar[CVAR_DEFAULT_SPEED]);
+		.min_val = 1.0), g_eCvar[CVAR_DEFAULT_SPEED]);
 
 	AutoExecConfig(true, CONFIG_NAME);
 
@@ -109,6 +107,8 @@ public plugin_init()
 	get_localinfo("amxx_configsdir", szPath, charsmax(szPath));
 	server_cmd("exec %s/plugins/%s.cfg", szPath, CONFIG_NAME);
 	server_exec();
+
+	arrayset(g_flHookSpeed, g_eCvar[CVAR_DEFAULT_SPEED], sizeof g_flHookSpeed);
 
 	new iEnt = rg_create_entity("info_target", true);
 
@@ -119,35 +119,31 @@ public plugin_init()
 	}
 }
 
-public client_putinserver(id)
-{
-	g_flHookSpeed[id] = g_eCvar[CVAR_DEFAULT_SPEED];
-}
-
 public client_disconnected(id)
 {
-	g_bAlive[id] = g_bHookUse[id] = g_bCanUseHook[id] = false;
-	remove_task(id);
+	g_bHookUse[id] = false;
+	g_bCanUseHook[id] = false;
+	remove_task(id+TASK_ID_HOOK);
+	g_flHookSpeed[id] = g_eCvar[CVAR_DEFAULT_SPEED];
 }
 
 @OnPlayerSpawn_Post(const id)
 {
 	if (is_user_alive(id))
 	{
-		g_bAlive[id] = true;
 		g_bHookUse[id] = false;
 	}
 }
 
 @OnPlayerKilled_Post(const iVictim)
 {
-	g_bAlive[iVictim] = g_bHookUse[iVictim] = false;
-	remove_task(iVictim);
+	g_bHookUse[iVictim] = false;
+	remove_task(iVictim+TASK_ID_HOOK);
 }
 
 @func_HookEnable(const id)
 {
-	if (!g_bAlive[id])
+	if (!is_user_alive(id))
 	{
 		return PLUGIN_HANDLED;
 	}
@@ -291,13 +287,24 @@ public plugin_natives()
 {
 	register_library("hook_trail");
 
-	register_native("hook_trail_user_manage",		"@Native_UserManage");
-	register_native("hook_trail_has_user",			"@Native_HasUser");
+	register_native("hook_trail_has_user_access",	"@Native_HasUserAccess");
+	register_native("hook_trail_set_user_access",	"@Native_SetUserAccess");
 	register_native("hook_trail_get_user_speed",	"@Native_GetUserSpeed");
 	register_native("hook_trail_set_user_speed",	"@Native_SetUserSpeed");
 }
 
-@Native_UserManage(const iPlugin, const iParams)
+bool:@Native_HasUserAccess(const iPlugin, const iParams)
+{
+	enum { arg_player = 1 };
+
+	new iPlayer = get_param(arg_player);
+
+	CHECK_NATIVE_PLAYER(iPlayer)
+
+	return g_bCanUseHook[iPlayer];
+}
+
+@Native_SetUserAccess(const iPlugin, const iParams)
 {
 	enum { arg_player = 1, arg_enable };
 
@@ -310,19 +317,8 @@ public plugin_natives()
 	if (!g_bCanUseHook[iPlayer])
 	{
 		g_bHookUse[iPlayer] = false;
-		remove_task(iPlayer);
+		remove_task(iPlayer+TASK_ID_HOOK);
 	}
-}
-
-bool:@Native_HasUser(const iPlugin, const iParams)
-{
-	enum { arg_player = 1 };
-
-	new iPlayer = get_param(arg_player);
-
-	CHECK_NATIVE_PLAYER(iPlayer)
-
-	return g_bCanUseHook[iPlayer];
 }
 
 Float:@Native_GetUserSpeed(const iPlugin, const iParams)
@@ -346,10 +342,16 @@ Float:@Native_SetUserSpeed(const iPlugin, const iParams)
 
 	new Float:flSpeed = get_param_f(arg_speed);
 
-	if (flSpeed < 1.0)
+	if (flSpeed == -1.0)
 	{
-		abort(AMX_ERR_NATIVE, "Speed must be greater or equal to 1.0");
+		g_flHookSpeed[iPlayer] = g_eCvar[CVAR_DEFAULT_SPEED];
 	}
-
-	g_flHookSpeed[iPlayer] = flSpeed;
+	else if (flSpeed < 1.0)
+	{
+		abort(AMX_ERR_NATIVE, "Speed value must be greater or equal to 1.0");
+	}
+	else
+	{
+		g_flHookSpeed[iPlayer] = flSpeed;
+	}
 }

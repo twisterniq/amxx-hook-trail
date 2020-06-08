@@ -1,0 +1,41 @@
+[en]
+HOOK_TRAIL_MENU_ACCESS_TITLE = Select a player
+HOOK_TRAIL_MENU_ACCESS_HAS = \y(allowed)
+HOOK_TRAIL_MENU_ACCESS_EMPTY = ""
+HOOK_TRAIL_MENU_ACCESS_ON = ^4* ^1You've allowed to use ^4hook ^1to ^3%n
+HOOK_TRAIL_MENU_ACCESS_OFF = ^4* ^1You've forbidden to use ^4hook ^1to ^3%n
+HOOK_TRAIL_MENU_ACCESS_ERROR = ^3* ^1Failed to allow to use ^4hook^1, player has left
+
+HOOK_TRAIL_MENU_ACCESS_NEXT = Next
+HOOK_TRAIL_MENU_ACCESS_BACK = Back
+HOOK_TRAIL_MENU_ACCESS_EXIT = Exit
+
+HOOK_TRAIL_MENU_ACCESS_CVAR = Access to the menu
+
+[es]
+HOOK_TRAIL_MENU_ACCESS_TITLE = Elige un jugador
+HOOK_TRAIL_MENU_ACCESS_HAS = \y(habilitado)
+HOOK_TRAIL_MENU_ACCESS_EMPTY = ""
+HOOK_TRAIL_MENU_ACCESS_ON = ^4* ^1Has permitido usar el ^4hook ^1al jugador ^3%n
+HOOK_TRAIL_MENU_ACCESS_OFF = ^4* ^1Has deshabilitado el uso del ^4hook ^1al jugador ^3%n
+HOOK_TRAIL_MENU_ACCESS_ERROR = ^3* ^1No se ha podido permitir usar el ^4hook^1, el jugador ha salido
+
+HOOK_TRAIL_MENU_ACCESS_NEXT = Más
+HOOK_TRAIL_MENU_ACCESS_BACK = Atrás
+HOOK_TRAIL_MENU_ACCESS_EXIT = Salir
+
+HOOK_TRAIL_MENU_ACCESS_CVAR = Acceso al menú
+
+[ru]
+HOOK_TRAIL_MENU_ACCESS_TITLE = Выберите игрока
+HOOK_TRAIL_MENU_ACCESS_HAS = \y(есть)
+HOOK_TRAIL_MENU_ACCESS_EMPTY = ""
+HOOK_TRAIL_MENU_ACCESS_ON = ^4* ^1Вы успешно выдали ^4Верёвку ^1игроку ^3%n
+HOOK_TRAIL_MENU_ACCESS_OFF = ^4* ^1Вы успешно забрали ^4Верёвку ^1у игрока ^3%n
+HOOK_TRAIL_MENU_ACCESS_ERROR = ^3* ^1Не удалось выдать ^4Верёвку^1, игрок не на сервере
+
+HOOK_TRAIL_MENU_ACCESS_NEXT = Далее
+HOOK_TRAIL_MENU_ACCESS_BACK = Назад
+HOOK_TRAIL_MENU_ACCESS_EXIT = Выход
+
+HOOK_TRAIL_MENU_ACCESS_CVAR = Доступ к меню

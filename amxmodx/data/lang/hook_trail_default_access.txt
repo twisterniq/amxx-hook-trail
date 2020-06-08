@@ -1,0 +1,8 @@
+[en]
+HOOK_TRAIL_DEFAULT_ACCESS_CVAR = Acceso con el que el jugador por defecto podrá usar el hook
+
+[es]
+HOOK_TRAIL_DEFAULT_ACCESS_CVAR = Access at which the player will be able to use hook by default
+
+[ru]
+HOOK_TRAIL_MARKER_DEFAULT_ACCESS_CVAR = Доступ при котором игрок по стандарту сможет использовать верёвку
